@@ -61,11 +61,23 @@ class EventsController extends Controller
             'seat_map_id' => 'nullable|exists:seat_maps,id',
             'event_date' => 'required|date',
             'status' => 'required|in:draft,published,cancelled',
-            'event_type' => 'nullable|string|max:50'
+            'event_type' => 'nullable|string|max:50',
+            'image' => 'nullable|image|max:5000',
+            'base_price' => 'required|numeric|min:0'
         ]);
         
         $event = $id ? Event::findOrFail($id) : new Event();
-        $event->fill($request->all());
+        $event->fill($request->except(['image', 'base_price']));
+        
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('events', 'public');
+            $event->image_url = '/storage/' . $path;
+        }
+        
+        $metadata = $event->metadata ?? [];
+        $metadata['base_price'] = $request->base_price;
+        $event->metadata = $metadata;
+        
         $event->save();
         
         return redirect()->route('admin_events_list')

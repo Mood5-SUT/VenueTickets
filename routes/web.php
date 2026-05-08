@@ -19,6 +19,8 @@ use App\Http\Controllers\Web\AnalyticsController;
 use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\AuditController;
 
+use App\Http\Controllers\Web\PublicEventController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -27,8 +29,22 @@ use App\Http\Controllers\Web\AuditController;
 
 // Home Route
 Route::get('/', function () {
-    return view('welcome');
+    // Fetch upcoming events
+    $events = \App\Models\Event::where('status', 'published') // Assuming 'published' is the active status
+        ->orWhere('status', 'draft') // Including draft for testing if published are empty
+        ->orderBy('event_date', 'asc')
+        ->take(6)
+        ->get();
+        
+    return view('welcome', compact('events'));
 })->name('home');
+
+// Public Event Details Route
+Route::get('/event/{id}', [PublicEventController::class, 'show'])->name('event.show');
+Route::post('/event/{id}/checkout', [PublicEventController::class, 'checkout'])->name('event.checkout');
+Route::get('/order/{id}/success', [PublicEventController::class, 'success'])->name('order.success');
+Route::get('/my-tickets', [PublicEventController::class, 'myTickets'])->name('my_tickets');
+Route::get('/my-schedule', [PublicEventController::class, 'mySchedule'])->name('my_schedule');
 
 // Authentication Routes
 Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');

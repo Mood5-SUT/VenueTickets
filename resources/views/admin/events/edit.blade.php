@@ -8,7 +8,7 @@
         <h5 class="mb-0">{{ isset($event) ? 'Edit Event' : 'Create New Event' }}</h5>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('admin_events_save', $event->id ?? null) }}">
+        <form method="POST" action="{{ route('admin_events_save', $event->id ?? null) }}" enctype="multipart/form-data">
             {{ csrf_field() }}
             
             <div class="row g-3">
@@ -26,6 +26,19 @@
                         <option value="theater" {{ ($event->event_type ?? '') == 'theater' ? 'selected' : '' }}>Theater</option>
                         <option value="conference" {{ ($event->event_type ?? '') == 'conference' ? 'selected' : '' }}>Conference</option>
                     </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Event Image</label>
+                    <input type="file" name="image" class="form-control" accept="image/*">
+                    @if(isset($event) && $event->image_url)
+                        <small class="text-muted d-block mt-1">Current image uploaded.</small>
+                    @endif
+                </div>
+                
+                <div class="col-md-6">
+                    <label class="form-label">Base Ticket Price ($)</label>
+                    <input type="number" step="0.01" name="base_price" class="form-control" value="{{ $event->metadata['base_price'] ?? '50.00' }}" required>
                 </div>
                 
                 <div class="col-md-6">
@@ -55,7 +68,7 @@
                 <div class="col-md-6">
                     <label class="form-label">Event Date</label>
                     <input type="datetime-local" name="event_date" class="form-control" 
-                           value="{{ isset($event) ? $event->event_date->format('Y-m-d\TH:i') : old('event_date') }}" required>
+                           value="{{ isset($event) && $event->event_date ? $event->event_date->format('Y-m-d\TH:i') : old('event_date') }}" required>
                 </div>
                 
                 <div class="col-md-6">

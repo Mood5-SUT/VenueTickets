@@ -52,8 +52,11 @@
                             </span>
                         </td>
                         <td>
-                            <a href="{{ route('admin_events_edit', $event->id) }}" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('admin_events_edit', $event->id) }}" class="btn btn-sm btn-outline-primary" title="Edit Event">
                                 <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{{ route('admin_events_pricing_list', $event->id) }}" class="btn btn-sm btn-outline-success" title="Manage Pricing Tiers">
+                                <i class="bi bi-tags"></i>
                             </a>
                         </td>
                     </tr>
