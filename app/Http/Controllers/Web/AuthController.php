@@ -7,16 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('guest')->except(['logout', 'profile', 'updateProfile', 'changePassword']);
-        $this->middleware('auth:web')->only(['logout', 'profile', 'updateProfile', 'changePassword']);
-    }
-    
     public function showLoginForm()
     {
         return view('auth.login');
@@ -24,7 +17,7 @@ class AuthController extends Controller
     
     public function login(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'email' => 'required|email',
             'password' => 'required|string'
         ]);
@@ -37,31 +30,24 @@ class AuthController extends Controller
         $remember = $request->has('remember');
         
         if (Auth::attempt($credentials, $remember)) {
+            $request->session()->regenerate();
+            
+            // Check user status (redundant with middleware but kept for immediate feedback)
             $user = Auth::user();
             
-            // Check if user is banned
-            if ($user->isBanned()) {
+            if ($user->isBanned() || !$user->is_active) {
                 Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                
                 return redirect()->back()
-                    ->withErrors(['email' => 'Your account has been suspended. Please contact support.'])
+                    ->withErrors(['email' => 'Your account is not accessible. Please contact support.'])
                     ->withInput($request->except('password'));
             }
-            
-            // Check if user is active
-            if (!$user->is_active) {
-                Auth::logout();
-                return redirect()->back()
-                    ->withErrors(['email' => 'Your account is not active. Please verify your email.'])
-                    ->withInput($request->except('password'));
-            }
-            
-            $request->session()->regenerate();
             
             // Redirect based on role
             if ($user->hasRole(['super-admin', 'admin'])) {
                 return redirect()->intended(route('admin_dashboard'));
-            } elseif ($user->hasRole('organizer')) {
-                return redirect()->intended(route('organizer_dashboard'));
             }
             
             return redirect()->intended(route('home'));
@@ -79,7 +65,7 @@ class AuthController extends Controller
     
     public function register(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
@@ -95,10 +81,8 @@ class AuthController extends Controller
             'is_active' => true
         ]);
         
-        // Assign default role
         $user->assignRole('customer');
         
-        // Log the user in
         Auth::login($user);
         
         return redirect()->route('home')
@@ -112,21 +96,22 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         
-        return redirect()->route('login')->with('success', 'You have been logged out successfully.');
+        return redirect()->route('login')
+            ->with('success', 'You have been logged out successfully.');
     }
     
     public function profile()
     {
         $user = Auth::user();
         $orders = $user->orders()->with('event')->orderBy('created_at', 'desc')->limit(10)->get();
-        $tickets = $user->tickets()->with('event')->where('status', 'active')->orderBy('created_at', 'desc')->get();
+        $tickets = $user->tickets()->with('event')->where('status', 'active')->get();
         
         return view('auth.profile', compact('user', 'orders', 'tickets'));
     }
     
     public function updateProfile(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'nullable|string|max:20',
             'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
@@ -135,17 +120,6 @@ class AuthController extends Controller
         $user = Auth::user();
         $user->name = $request->name;
         $user->phone = $request->phone;
-        
-        if ($request->hasFile('avatar')) {
-            // Delete old avatar
-            if ($user->avatar) {
-                \Storage::delete('public/' . $user->avatar);
-            }
-            
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $path;
-        }
-        
         $user->save();
         
         return redirect()->back()->with('success', 'Profile updated successfully.');
@@ -158,14 +132,13 @@ class AuthController extends Controller
     
     public function changePassword(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'current_password' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
         ]);
         
         $user = Auth::user();
         
-        // Verify old password
         if (!Hash::check($request->current_password, $user->password)) {
             return redirect()->back()
                 ->withErrors(['current_password' => 'The current password is incorrect.']);
@@ -185,15 +158,12 @@ class AuthController extends Controller
     
     public function sendResetLink(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'email' => 'required|email|exists:users,email'
         ]);
         
-        // Here you would typically send a password reset email
-        // For now, just redirect with a success message
-        
         return redirect()->back()
-            ->with('success', 'Password reset link has been sent to your email address.');
+            ->with('success', 'Password reset link has been sent to your email.');
     }
     
     public function showResetPasswordForm($token)
@@ -203,17 +173,14 @@ class AuthController extends Controller
     
     public function resetPassword(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'token' => 'required',
             'email' => 'required|email|exists:users,email',
             'password' => 'required|string|min:8|confirmed',
         ]);
         
-        // Here you would typically validate the token and reset the password
-        // For now, just redirect with a success message
-        
         return redirect()->route('login')
-            ->with('success', 'Your password has been reset successfully. Please login with your new password.');
+            ->with('success', 'Password reset successfully. Please login.');
     }
     
     public function showOrganizerRegistration()
@@ -223,7 +190,7 @@ class AuthController extends Controller
     
     public function registerOrganizer(Request $request)
     {
-        $this->validate($request, [
+        $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
@@ -244,7 +211,6 @@ class AuthController extends Controller
             'is_active' => true
         ]);
         
-        // Create organizer detail
         $user->organizerDetail()->create([
             'company_name' => $request->company_name,
             'business_phone' => $request->business_phone,
@@ -254,13 +220,12 @@ class AuthController extends Controller
             'status' => 'pending'
         ]);
         
-        // Assign roles
         $user->assignRole('customer');
         $user->assignRole('organizer');
         
         Auth::login($user);
         
         return redirect()->route('home')
-            ->with('success', 'Your organizer account has been created and is pending approval. We will review your application shortly.');
+            ->with('success', 'Your organizer application has been submitted for review.');
     }
 }

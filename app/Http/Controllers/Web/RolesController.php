@@ -12,12 +12,7 @@ use Artisan;
 
 class RolesController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function list()
+public function list()
     {
         if(!auth()->user()->hasPermissionTo('manage_roles')) {
             abort(403);

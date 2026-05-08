@@ -10,12 +10,7 @@ use Carbon\Carbon;
 
 class PricingTiersController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function list($eventId)
+public function list($eventId)
     {
         if(!auth()->user()->hasPermissionTo('manage_events')) {
             abort(403);

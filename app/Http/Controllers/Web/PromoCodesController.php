@@ -9,12 +9,7 @@ use App\Models\Event;
 
 class PromoCodesController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function list(Request $request)
+public function list(Request $request)
     {
         if(!auth()->user()->hasPermissionTo('manage_promo_codes')) {
             abort(403);

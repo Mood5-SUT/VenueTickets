@@ -12,12 +12,7 @@ use Carbon\Carbon;
 
 class ScanController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function scanDashboard($eventId)
+public function scanDashboard($eventId)
     {
         if(!auth()->user()->hasPermissionTo('scan_tickets')) {
             abort(403);

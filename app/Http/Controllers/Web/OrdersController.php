@@ -11,12 +11,7 @@ use Illuminate\Support\Facades\Mail;
 
 class OrdersController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function list(Request $request)
+public function list(Request $request)
     {
         if(!auth()->user()->hasPermissionTo('manage_orders')) {
             abort(403);

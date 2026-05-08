@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasRoles, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
     
     protected $fillable = [
         'name',
@@ -27,8 +28,7 @@ class User extends Authenticatable
     
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'is_active' => 'boolean',
-        'password' => 'hashed'
+        'is_active' => 'boolean'
     ];
     
     public function organizerDetail()
@@ -74,13 +74,5 @@ class User extends Authenticatable
     public function isAdmin()
     {
         return $this->hasRole('super-admin') || $this->hasRole('admin');
-    }
-    
-    public function getAvatarUrlAttribute()
-    {
-        if ($this->avatar) {
-            return asset('storage/' . $this->avatar);
-        }
-        return asset('images/default-avatar.png');
     }
 }

@@ -9,12 +9,7 @@ use Artisan;
 
 class SettingsController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function edit()
+public function edit()
     {
         if(!auth()->user()->hasPermissionTo('manage_system')) {
             abort(403);

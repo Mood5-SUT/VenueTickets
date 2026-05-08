@@ -1,340 +1,212 @@
-{{-- resources/views/layouts/admin.blade.php --}}
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="{{ session('theme', 'light') }}">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title') - VenueTickets Admin</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>@yield('title') - Admin Panel</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
-    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <!-- Custom Admin CSS -->
-    <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
+    
+    <style>
+        .sidebar {
+            background: #1a1d23;
+            min-height: 100vh;
+            width: 250px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            overflow-y: auto;
+        }
+        .sidebar .nav-link {
+            color: #a0a0a0;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+        .main-content {
+            margin-left: 250px;
+        }
+        .topbar {
+            background: #fff;
+            border-bottom: 1px solid #dee2e6;
+        }
+    </style>
     
     @stack('styles')
 </head>
 <body>
-    <div class="admin-wrapper">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar" id="adminSidebar">
-            <div class="sidebar-header">
-                <a href="{{ route('admin_dashboard') }}" class="sidebar-brand">
-                    <i class="bi bi-ticket-perforated"></i>
-                    <span class="brand-text">VenueTickets</span>
-                </a>
-                <button class="sidebar-toggle" id="sidebarToggle">
-                    <i class="bi bi-list"></i>
-                </button>
-            </div>
-            
-            <!-- Global Search -->
-            <div class="sidebar-search p-3">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" 
-                           class="form-control" 
-                           id="globalSearch" 
-                           placeholder="Search... (Ctrl+K)"
-                           autocomplete="off">
-                </div>
-                <div class="search-results" id="searchResults" style="display: none;"></div>
-            </div>
-            
-            <nav class="sidebar-nav">
-                <ul class="nav flex-column">
-                    <!-- Dashboard -->
-                    <li class="nav-item">
-                        <a href="{{ route('admin_dashboard') }}" 
-                           class="nav-link {{ request()->routeIs('admin_dashboard') ? 'active' : '' }}">
-                            <i class="bi bi-speedometer2"></i>
-                            <span>Dashboard</span>
-                        </a>
-                    </li>
-                    
-                    <!-- Events Section -->
-                    @can('manage_events')
-                    <li class="nav-item">
-                        <a href="#eventsSubmenu" 
-                           class="nav-link collapsed" 
-                           data-bs-toggle="collapse" 
-                           role="button">
-                            <i class="bi bi-calendar-event"></i>
-                            <span>Events</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="nav flex-column collapse {{ request()->is('admin/events*') ? 'show' : '' }}" 
-                            id="eventsSubmenu">
-                            <li class="nav-item">
-                                <a href="{{ route('admin_events_list') }}" 
-                                   class="nav-link {{ request()->routeIs('admin_events_list') ? 'active' : '' }}">
-                                    All Events
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_events_create') }}" 
-                                   class="nav-link">
-                                    Create Event
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    @endcan
-                    
-                    <!-- Venues Section -->
-                    @can('manage_venues')
-                    <li class="nav-item">
-                        <a href="#venuesSubmenu" 
-                           class="nav-link collapsed" 
-                           data-bs-toggle="collapse">
-                            <i class="bi bi-building"></i>
-                            <span>Venues</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="nav flex-column collapse {{ request()->is('admin/venues*') ? 'show' : '' }}" 
-                            id="venuesSubmenu">
-                            <li class="nav-item">
-                                <a href="{{ route('admin_venues_list') }}" 
-                                   class="nav-link">
-                                    All Venues
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_seat_maps_list') }}" 
-                                   class="nav-link">
-                                    Seat Maps
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    @endcan
-                    
-                    <!-- Orders & Tickets -->
-                    @can('manage_orders')
-                    <li class="nav-item">
-                        <a href="#ordersSubmenu" 
-                           class="nav-link collapsed" 
-                           data-bs-toggle="collapse">
-                            <i class="bi bi-cart"></i>
-                            <span>Orders & Tickets</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="nav flex-column collapse {{ request()->is('admin/orders*') ? 'show' : '' }}" 
-                            id="ordersSubmenu">
-                            <li class="nav-item">
-                                <a href="{{ route('admin_orders_list') }}" 
-                                   class="nav-link">
-                                    All Orders
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_resale_list') }}" 
-                                   class="nav-link">
-                                    Resale Moderation
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    @endcan
-                    
-                    <!-- Users & Organizers -->
-                    @can('manage_users')
-                    <li class="nav-item">
-                        <a href="#usersSubmenu" 
-                           class="nav-link collapsed" 
-                           data-bs-toggle="collapse">
-                            <i class="bi bi-people"></i>
-                            <span>Users</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="nav flex-column collapse {{ request()->is('admin/users*') || request()->is('admin/organizers*') ? 'show' : '' }}" 
-                            id="usersSubmenu">
-                            <li class="nav-item">
-                                <a href="{{ route('admin_users_list') }}" 
-                                   class="nav-link">
-                                    All Users
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_organizers_list') }}" 
-                                   class="nav-link">
-                                    Organizers
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_roles_list') }}" 
-                                   class="nav-link">
-                                    Roles & Permissions
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    @endcan
-                    
-                    <!-- Finance -->
-                    @can('view_finance')
-                    <li class="nav-item">
-                        <a href="#financeSubmenu" 
-                           class="nav-link collapsed" 
-                           data-bs-toggle="collapse">
-                            <i class="bi bi-cash-stack"></i>
-                            <span>Finance</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="nav flex-column collapse" id="financeSubmenu">
-                            <li class="nav-item">
-                                <a href="{{ route('admin_finance') }}" 
-                                   class="nav-link">
-                                    Overview
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_analytics') }}" 
-                                   class="nav-link">
-                                    Analytics
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    @endcan
-                    
-                    <!-- Promo Codes -->
-                    @can('manage_promo_codes')
-                    <li class="nav-item">
-                        <a href="{{ route('admin_promo_codes_list') }}" 
-                           class="nav-link {{ request()->routeIs('admin_promo_codes*') ? 'active' : '' }}">
-                            <i class="bi bi-tag"></i>
-                            <span>Promo Codes</span>
-                        </a>
-                    </li>
-                    @endcan
-                    
-                    <!-- System -->
-                    @can('manage_system')
-                    <li class="nav-item">
-                        <a href="#systemSubmenu" 
-                           class="nav-link collapsed" 
-                           data-bs-toggle="collapse">
-                            <i class="bi bi-gear"></i>
-                            <span>System</span>
-                            <i class="bi bi-chevron-down ms-auto"></i>
-                        </a>
-                        <ul class="nav flex-column collapse" id="systemSubmenu">
-                            <li class="nav-item">
-                                <a href="{{ route('admin_settings') }}" 
-                                   class="nav-link">
-                                    Settings
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('admin_audit_log') }}" 
-                                   class="nav-link">
-                                    Audit Log
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    @endcan
-                </ul>
-            </nav>
-            
-            <!-- Sidebar Footer -->
-            <div class="sidebar-footer p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="theme-toggle">
-                        <button class="btn btn-sm btn-outline-secondary" id="themeToggle">
-                            <i class="bi bi-sun-fill light-icon"></i>
-                            <i class="bi bi-moon-fill dark-icon"></i>
-                        </button>
-                    </div>
-                    <div class="user-info">
-                        <small class="text-muted">{{ auth()->user()->name }}</small>
-                    </div>
-                </div>
-            </div>
-        </aside>
+    <!-- Sidebar -->
+    <div class="sidebar d-flex flex-column">
+        <div class="p-3 border-bottom border-secondary">
+            <a href="{{ route('admin_dashboard') }}" class="text-white text-decoration-none">
+                <h5 class="mb-0"><i class="bi bi-ticket-perforated me-2"></i>VenueTickets</h5>
+            </a>
+        </div>
         
-        <!-- Main Content -->
-        <main class="admin-main">
-            <!-- Top Navbar -->
-            <nav class="admin-topbar">
-                <div class="d-flex justify-content-between align-items-center w-100">
-                    <button class="btn btn-link sidebar-toggle-mobile" id="mobileSidebarToggle">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    
-                    <div class="d-flex align-items-center gap-3">
-                        <!-- Notifications -->
-                        <div class="dropdown">
-                            <button class="btn btn-link position-relative" data-bs-toggle="dropdown">
-                                <i class="bi bi-bell"></i>
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    3
-                                </span>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <h6 class="dropdown-header">Notifications</h6>
-                                <a class="dropdown-item" href="#">New organizer application</a>
-                                <a class="dropdown-item" href="#">Refund request pending</a>
-                                <a class="dropdown-item" href="#">Failed payment alert</a>
-                            </div>
-                        </div>
-                        
-                        <!-- User Menu -->
-                        <div class="dropdown">
-                            <button class="btn btn-link dropdown-toggle" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle"></i>
-                                {{ auth()->user()->name }}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{{ route('profile') }}">Profile</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ route('logout') }}"
-                                       onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                        Logout
-                                    </a>
-                                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                                        {{ csrf_field() }}
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-            
-            <!-- Page Content -->
-            <div class="admin-content">
-                @if($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
+        <nav class="flex-grow-1 p-2">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a href="{{ route('admin_dashboard') }}" 
+                       class="nav-link {{ request()->routeIs('admin_dashboard') ? 'active' : '' }}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
                 
-                @if(session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                @endif
+                @can('manage_events')
+                <li class="nav-item">
+                    <a href="{{ route('admin_events_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_events_*') ? 'active' : '' }}">
+                        <i class="bi bi-calendar-event"></i> Events
+                    </a>
+                </li>
+                @endcan
                 
-                @yield('content')
-            </div>
-        </main>
+                @can('manage_venues')
+                <li class="nav-item">
+                    <a href="{{ route('admin_venues_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_venues_*') ? 'active' : '' }}">
+                        <i class="bi bi-building"></i> Venues
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin_seat_maps_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_seat_maps_*') ? 'active' : '' }}">
+                        <i class="bi bi-grid-3x3-gap"></i> Seat Maps
+                    </a>
+                </li>
+                @endcan
+                
+                @can('manage_orders')
+                <li class="nav-item">
+                    <a href="{{ route('admin_orders_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_orders_*') ? 'active' : '' }}">
+                        <i class="bi bi-cart"></i> Orders
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin_tickets_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_tickets_*') ? 'active' : '' }}">
+                        <i class="bi bi-ticket"></i> Tickets
+                    </a>
+                </li>
+                @endcan
+                
+                @can('manage_users')
+                <li class="nav-item">
+                    <a href="{{ route('admin_users_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_users_*') ? 'active' : '' }}">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin_organizers_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_organizers_*') ? 'active' : '' }}">
+                        <i class="bi bi-person-badge"></i> Organizers
+                    </a>
+                </li>
+                @endcan
+                
+                @can('manage_promo_codes')
+                <li class="nav-item">
+                    <a href="{{ route('admin_promo_codes_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_promo_codes_*') ? 'active' : '' }}">
+                        <i class="bi bi-tag"></i> Promo Codes
+                    </a>
+                </li>
+                @endcan
+                
+                @can('view_finance')
+                <li class="nav-item">
+                    <a href="{{ route('admin_finance_index') }}" 
+                       class="nav-link {{ request()->routeIs('admin_finance_*') ? 'active' : '' }}">
+                        <i class="bi bi-cash-stack"></i> Finance
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin_analytics_index') }}" 
+                       class="nav-link {{ request()->routeIs('admin_analytics_*') ? 'active' : '' }}">
+                        <i class="bi bi-graph-up"></i> Analytics
+                    </a>
+                </li>
+                @endcan
+                
+                @can('manage_system')
+                <li class="nav-item">
+                    <a href="{{ route('admin_settings_index') }}" 
+                       class="nav-link {{ request()->routeIs('admin_settings_*') ? 'active' : '' }}">
+                        <i class="bi bi-gear"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin_audit_log_list') }}" 
+                       class="nav-link {{ request()->routeIs('admin_audit_log_*') ? 'active' : '' }}">
+                        <i class="bi bi-journal-text"></i> Audit Log
+                    </a>
+                </li>
+                @endcan
+            </ul>
+        </nav>
+        
+        <div class="p-3 border-top border-secondary">
+            <a href="{{ route('home') }}" class="text-secondary text-decoration-none small">
+                <i class="bi bi-arrow-left me-1"></i> Back to Site
+            </a>
+        </div>
     </div>
     
-    <!-- Bootstrap JS -->
-    <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
-    <!-- Admin JS -->
-    <script src="{{ asset('js/admin.js') }}"></script>
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="topbar px-4 py-2 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@yield('title')</h5>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted">{{ auth()->user()->name }}</span>
+                <form action="{{ route('logout') }}" method="POST">
+                    {{ csrf_field() }}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="p-4">
+            @if($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <ul class="mb-0">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            
+            @yield('content')
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @stack('scripts')
 </body>
 </html>

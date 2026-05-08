@@ -12,12 +12,7 @@ use Carbon\Carbon;
 
 class FinanceController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
-    public function overview(Request $request)
+public function overview(Request $request)
     {
         if(!auth()->user()->hasPermissionTo('view_finance')) {
             abort(403);

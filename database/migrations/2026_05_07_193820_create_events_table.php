@@ -1,5 +1,4 @@
 <?php
-// database/migrations/2024_01_01_000000_create_events_table.php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -19,8 +18,8 @@ return new class extends Migration
             $table->dateTime('event_date');
             $table->dateTime('end_date')->nullable();
             $table->time('doors_open')->nullable();
-            $table->string('status')->default('draft'); // draft, published, cancelled, completed
-            $table->string('event_type')->nullable(); // concert, sports, theater, etc.
+            $table->string('status')->default('draft');
+            $table->string('event_type')->nullable();
             $table->string('image_url')->nullable();
             $table->string('banner_url')->nullable();
             $table->integer('age_restriction')->nullable();

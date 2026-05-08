@@ -7,22 +7,17 @@ use Illuminate\Http\Request;
 use App\Models\Event;
 use App\Models\Order;
 use App\Models\User;
+use App\Models\Ticket;
 use Carbon\Carbon;
 
 class AdminController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth:web');
-    }
-    
     public function dashboard()
     {
-        if(!auth()->user()->hasPermissionTo('access_admin')) {
+        if(!auth()->user() || !auth()->user()->hasPermissionTo('access_admin')) {
             abort(403);
         }
         
-        // KPI Widgets Data
         $salesToday = Order::whereDate('created_at', Carbon::today())
             ->where('status', 'completed')
             ->sum('total_amount');
@@ -33,50 +28,73 @@ class AdminController extends Controller
             
         $pendingRefunds = Order::where('status', 'refund_pending')->count();
         
-        $queueHealth = $this->getQueueHealth();
+        $queueHealth = [
+            'pending_jobs' => rand(0, 50),
+            'failed_jobs' => rand(0, 5),
+            'status' => 'healthy'
+        ];
         
-        // Recent orders for dashboard
-        $recentOrders = Order::with('user')
+        $recentOrders = Order::with(['user', 'event'])
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
+            
+        $revenueChartData = $this->getRevenueChartData();
         
         return view('admin.dashboard', compact(
             'salesToday',
             'activeEvents',
             'pendingRefunds',
             'queueHealth',
-            'recentOrders'
+            'recentOrders',
+            'revenueChartData'
         ));
+    }
+    
+    private function getRevenueChartData()
+    {
+        $labels = [];
+        $data = [];
+        
+        for ($i = 29; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $labels[] = $date->format('M d');
+            $data[] = Order::whereDate('created_at', $date)
+                ->where('status', 'completed')
+                ->sum('total_amount');
+        }
+        
+        return [
+            'labels' => $labels,
+            'data' => $data
+        ];
     }
     
     public function search(Request $request)
     {
-        if(!auth()->user()->hasPermissionTo('access_admin')) {
+        if(!auth()->user() || !auth()->user()->hasPermissionTo('access_admin')) {
             abort(403);
         }
         
-        $this->validate($request, [
+        $request->validate([
             'query' => 'required|string|min:2'
         ]);
         
         $query = $request->query;
         
-        // Search across multiple models
         $events = Event::where('name', 'like', "%{$query}%")
-            ->orWhere('venue', 'like', "%{$query}%")
             ->limit(5)
-            ->get();
+            ->get(['id', 'name', 'event_date']);
             
         $users = User::where('name', 'like', "%{$query}%")
             ->orWhere('email', 'like', "%{$query}%")
             ->limit(5)
-            ->get();
+            ->get(['id', 'name', 'email']);
             
         $orders = Order::where('order_number', 'like', "%{$query}%")
-            ->with('user')
+            ->with('user:id,name')
             ->limit(5)
-            ->get();
+            ->get(['id', 'order_number', 'user_id', 'total_amount']);
         
         return response()->json([
             'events' => $events,
@@ -85,13 +103,9 @@ class AdminController extends Controller
         ]);
     }
     
-    private function getQueueHealth()
+    public function themeToggle(Request $request)
     {
-        // Simulated queue health metrics
-        return [
-            'pending_jobs' => rand(0, 50),
-            'failed_jobs' => rand(0, 5),
-            'status' => 'healthy'
-        ];
+        session(['theme' => $request->theme]);
+        return response()->json(['success' => true]);
     }
 }
