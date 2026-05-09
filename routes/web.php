@@ -19,7 +19,6 @@ use App\Http\Controllers\Web\FinanceController;
 use App\Http\Controllers\Web\AnalyticsController;
 use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\AuditController;
-use App\Http\Controllers\Web\SocialiteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,7 +27,9 @@ use App\Http\Controllers\Web\SocialiteController;
 */
 
 // Home Route
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
 
 // Authentication Routes (Public)
 Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
