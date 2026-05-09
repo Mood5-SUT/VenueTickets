@@ -144,17 +144,21 @@
                 </li>
                 @endcan
                 
+               
                 @can('manage_system')
-                <li class="nav-item">
-                    <a href="{{ route('admin_settings_index') }}" 
-                       class="nav-link {{ request()->routeIs('admin_settings_*') ? 'active' : '' }}">
-                        <i class="bi bi-gear"></i> Settings
-                    </a>
-                </li>
+
                 <li class="nav-item">
                     <a href="{{ route('admin_audit_log_list') }}" 
                        class="nav-link {{ request()->routeIs('admin_audit_log_*') ? 'active' : '' }}">
                         <i class="bi bi-journal-text"></i> Audit Log
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a href="{{ route('admin_settings_index') }}" 
+                       class="nav-link {{ request()->routeIs('admin_settings_*') ? 'active' : '' }}">
+                        <i class="bi bi-gear"></i> Settings
                     </a>
                 </li>
                 @endcan

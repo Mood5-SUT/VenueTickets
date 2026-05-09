@@ -22,6 +22,20 @@
                         </div>
                     @endif
                     
+                    <!-- Social Register Button -->
+                    <div class="mb-4">
+                        <div class="d-grid">
+                            <a href="{{ route('social.google') }}" class="btn btn-outline-danger">
+                                <i class="bi bi-google me-2"></i> Sign up with Google
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mb-4">
+                        <span class="text-muted">or register with email</span>
+                        <hr>
+                    </div>
+                    
                     <form method="POST" action="{{ route('register_submit') }}">
                         {{ csrf_field() }}
                         

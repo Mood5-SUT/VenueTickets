@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\AdminController;
 use App\Http\Controllers\Web\EventsController;
 use App\Http\Controllers\Web\VenuesController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Web\FinanceController;
 use App\Http\Controllers\Web\AnalyticsController;
 use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\AuditController;
+use App\Http\Controllers\Web\SocialiteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,29 +28,45 @@ use App\Http\Controllers\Web\AuditController;
 */
 
 // Home Route
-Route::get('/', function () {
-    return view('welcome');
-})->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
-// Authentication Routes
+// Authentication Routes (Public)
 Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('login', [AuthController::class, 'login'])->name('login_submit');
 Route::get('register', [AuthController::class, 'showRegistrationForm'])->name('register');
 Route::post('register', [AuthController::class, 'register'])->name('register_submit');
-Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-// Password Reset Routes
+// Password Reset Routes (Public)
 Route::get('forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
 Route::post('forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
 Route::get('reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
 Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 
-// Organizer Registration
+// Organizer Registration (Public)
 Route::get('organizer/register', [AuthController::class, 'showOrganizerRegistration'])->name('organizer.register');
 Route::post('organizer/register', [AuthController::class, 'registerOrganizer'])->name('organizer.register_submit');
 
-// Protected Routes
-Route::middleware('auth:web')->group(function () {
+// Social Login Routes (Public)
+Route::prefix('auth')->name('social.')->group(function () {
+    Route::get('google/redirect', [SocialiteController::class, 'redirectToGoogle'])->name('google');
+    Route::get('google/callback', [SocialiteController::class, 'handleGoogleCallback'])->name('google.callback');
+
+});
+
+/*
+|--------------------------------------------------------------------------
+| Protected Routes (Require Authentication)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+    
+    // Logout
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    
+    // OTP Verification Routes
+    Route::get('verify-otp', [AuthController::class, 'showOtpForm'])->name('verify_otp');
+    Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->name('verify_otp_submit');
+    Route::post('resend-otp', [AuthController::class, 'resendOtp'])->name('resend_otp');
     
     // Profile Routes
     Route::get('profile', [AuthController::class, 'profile'])->name('profile');
@@ -56,7 +74,11 @@ Route::middleware('auth:web')->group(function () {
     Route::get('change-password', [AuthController::class, 'showChangePasswordForm'])->name('password_change');
     Route::post('change-password', [AuthController::class, 'changePassword'])->name('password_change_submit');
     
-    // Admin Routes
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Routes
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('admin')->name('admin_')->group(function () {
         
         // Dashboard
@@ -151,7 +173,7 @@ Route::middleware('auth:web')->group(function () {
             Route::get('activity-log', [RolesController::class, 'activityLog'])->name('activity_log');
         });
         
-        // Orders & Tickets
+        // Orders
         Route::prefix('orders')->name('orders_')->group(function () {
             Route::get('/', [OrdersController::class, 'list'])->name('list');
             Route::get('{id}', [OrdersController::class, 'view'])->name('view');
