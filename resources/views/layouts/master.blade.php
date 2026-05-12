@@ -50,6 +50,15 @@
             
             --theme-conference-start: #11998e;
             --theme-conference-end: #38ef7d;
+
+            --theme-cinema-start: #e50914;
+            --theme-cinema-end: #000000;
+
+            --theme-exhibition-start: #d4af37;
+            --theme-exhibition-end: #f9f9f9;
+
+            --theme-nightlife-start: #39ff14;
+            --theme-nightlife-end: #9d00ff;
         }
 
         [data-theme="dark"] {
@@ -143,25 +152,78 @@
         }
 
         /* Thematic Gradients for Cards */
+        .theme-concert {
+            --theme-primary: var(--theme-concert-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-concert-start), var(--theme-concert-end));
+        }
         .theme-concert::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
-            background: linear-gradient(90deg, var(--theme-concert-start), var(--theme-concert-end));
+            background: var(--theme-gradient);
             z-index: 10;
+        }
+
+        .theme-football {
+            --theme-primary: var(--theme-football-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-football-start), var(--theme-football-end));
         }
         .theme-football::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
-            background: linear-gradient(90deg, var(--theme-football-start), var(--theme-football-end));
+            background: var(--theme-gradient);
             z-index: 10;
+        }
+
+        .theme-theater {
+            --theme-primary: var(--theme-theater-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-theater-start), var(--theme-theater-end));
         }
         .theme-theater::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
-            background: linear-gradient(90deg, var(--theme-theater-start), var(--theme-theater-end));
+            background: var(--theme-gradient);
             z-index: 10;
+        }
+
+        .theme-conference {
+            --theme-primary: var(--theme-conference-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-conference-start), var(--theme-conference-end));
         }
         .theme-conference::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
-            background: linear-gradient(90deg, var(--theme-conference-start), var(--theme-conference-end));
+            background: var(--theme-gradient);
             z-index: 10;
+        }
+
+        .theme-cinema {
+            --theme-primary: var(--theme-cinema-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-cinema-start), var(--theme-cinema-end));
+        }
+        .theme-cinema::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: var(--theme-gradient);
+            z-index: 10;
+        }
+
+        .theme-exhibition {
+            --theme-primary: var(--theme-exhibition-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-exhibition-start), var(--theme-exhibition-end));
+        }
+        .theme-exhibition::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: var(--theme-gradient);
+            z-index: 10;
+        }
+
+        .theme-nightlife {
+            --theme-primary: var(--theme-nightlife-start);
+            --theme-gradient: linear-gradient(90deg, var(--theme-nightlife-start), var(--theme-nightlife-end));
+        }
+        .theme-nightlife::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
+            background: var(--theme-gradient);
+            z-index: 10;
+        }
+
+        .theme-default {
+            --theme-gradient: var(--theme-gradient);
         }
         .theme-default::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px;
@@ -298,6 +360,35 @@
         #theme-toggle:hover {
             background: var(--glass-border);
             transform: rotate(15deg);
+        }
+
+        /* Theme-aware Text Utilities */
+        .text-theme { color: var(--text-primary) !important; }
+        .text-theme-secondary { color: var(--text-secondary) !important; }
+        
+        /* Overriding Bootstrap utilities for theme awareness */
+        [data-theme="light"] .text-white-50 { color: rgba(0,0,0,0.5) !important; }
+        [data-theme="light"] .text-white { color: #1f2128 !important; }
+        [data-theme="light"] .text-secondary { color: #6c757d !important; }
+        [data-theme="light"] .border-white-10 { border-color: rgba(0,0,0,0.12) !important; }
+        [data-theme="light"] .bg-white-5 { background-color: rgba(0,0,0,0.04) !important; }
+        [data-theme="light"] .bg-white-10 { background-color: rgba(0,0,0,0.08) !important; }
+        
+        [data-theme="light"] .form-control, 
+        [data-theme="light"] .form-select { 
+            background-color: white !important; 
+            color: #1f2128 !important; 
+            border-color: #dee2e6 !important; 
+        }
+        
+        [data-theme="light"] .event-overlay {
+            background: linear-gradient(to top, var(--bg-color) 0%, rgba(255,255,255,0.1) 100%) !important;
+        }
+        
+        [data-theme="light"] .alert-glass {
+            background-color: rgba(67, 97, 238, 0.05) !important;
+            border-color: rgba(67, 97, 238, 0.15) !important;
+            color: #1f2128 !important;
         }
     </style>
     
