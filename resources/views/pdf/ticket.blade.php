@@ -7,7 +7,6 @@
         body { font-family: 'Helvetica', sans-serif; color: #333; margin: 0; padding: 0; }
         .ticket-container { width: 100%; border: 2px solid #eee; border-radius: 10px; overflow: hidden; margin: 20px; }
         
-        /* Thematic Colors */
         @php
             $type = strtolower($ticket->event->event_type ?? 'concert');
             $primaryColor = '#333';
@@ -25,7 +24,6 @@
         .value { font-size: 18px; font-weight: bold; }
         .qr-section { text-align: center; padding: 30px; border-top: 1px dashed #eee; }
         .footer { background: #f9f9f9; padding: 15px; text-align: center; font-size: 10px; color: #999; }
-        .text-primary { color: {{ $primaryColor }}; }
     </style>
 </head>
 <body>
@@ -38,27 +36,27 @@
             <div class="row">
                 <div class="col">
                     <div class="label">Event</div>
-                    <div class="value">{{ $ticket->event->name }}</div>
+                    <div class="value">{{ $ticket->event->name ?? 'N/A' }}</div>
                 </div>
                 <div class="col" style="text-align: right;">
                     <div class="label">Date</div>
-                    <div class="value">{{ \Carbon\Carbon::parse($ticket->event->event_date)->format('M d, Y') }}</div>
+                    <div class="value">{{ $ticket->event->event_date ? \Carbon\Carbon::parse($ticket->event->event_date)->format('M d, Y') : 'N/A' }}</div>
                 </div>
             </div>
             <div class="row">
                 <div class="col">
                     <div class="label">Venue</div>
-                    <div class="value">{{ $ticket->event->venue->name }}</div>
+                    <div class="value">{{ $ticket->event->venue->name ?? 'N/A' }}</div>
                 </div>
                 <div class="col" style="text-align: right;">
                     <div class="label">Seat</div>
-                    <div class="value">Row {{ $ticket->row }}, Seat {{ $ticket->seat_number }}</div>
+                    <div class="value">Row {{ $ticket->row ?? 'GA' }}, Seat {{ $ticket->seat_number ?? 'GA' }}</div>
                 </div>
             </div>
             <div class="row">
                 <div class="col">
                     <div class="label">Tier</div>
-                    <div class="value">{{ $ticket->pricingTier->name }}</div>
+                    <div class="value">{{ $ticket->pricingTier->name ?? 'Standard' }}</div>
                 </div>
                 <div class="col" style="text-align: right;">
                     <div class="label">Ticket No.</div>
@@ -68,14 +66,7 @@
         </div>
         <div class="qr-section">
             <div class="label" style="margin-bottom: 15px;">Unique Entry QR Code</div>
-            @if($qrCode === 'MOCK_QR_CODE_DATA')
-                <div style="padding: 40px; background: #eee; border-radius: 10px; display: inline-block;">
-                    [ QR CODE SCANNER ]
-                    <br><small>{{ $ticket->qr_code }}</small>
-                </div>
-            @else
-                <img src="data:image/svg+xml;base64, {!! base64_encode($qrCode) !!} " width="150" height="150">
-            @endif
+            {!! $qrData !!}
         </div>
         <div class="footer">
             Presented by {{ $ticket->event->organizer->organizerDetail->company_name ?? 'The Event Organizer' }}

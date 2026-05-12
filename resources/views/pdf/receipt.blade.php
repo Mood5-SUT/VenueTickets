@@ -6,10 +6,9 @@
     <style>
         body { font-family: 'Helvetica', sans-serif; color: #333; line-height: 1.6; }
         
-        /* Thematic Colors */
         @php
             $type = strtolower($order->event->event_type ?? 'concert');
-            $primaryColor = '#4361ee'; // Default blue
+            $primaryColor = '#4361ee';
             if (str_contains($type, 'concert')) $primaryColor = '#f72585';
             elseif (str_contains($type, 'sport') || str_contains($type, 'football')) $primaryColor = '#4361ee';
             elseif (str_contains($type, 'theater') || str_contains($type, 'show')) $primaryColor = '#fb8500';
@@ -31,7 +30,6 @@
         .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #999; }
         .badge { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; text-transform: uppercase; }
         .badge-paid { background: #e7f9ed; color: #28a745; }
-        .text-primary { color: {{ $primaryColor }}; }
     </style>
 </head>
 <body>
@@ -60,14 +58,14 @@
                         <tr>
                             <td>
                                 <strong>Billed To:</strong><br>
-                                {{ $order->user->name }}<br>
-                                {{ $order->user->email }}
+                                {{ $order->user->name ?? 'N/A' }}<br>
+                                {{ $order->user->email ?? 'N/A' }}
                             </td>
                             <td>
                                 <strong>Event Details:</strong><br>
-                                {{ $order->event->name }}<br>
-                                {{ $order->event->venue ? $order->event->venue->name : 'Main Arena' }}<br>
-                                {{ \Carbon\Carbon::parse($order->event->event_date)->format('M d, Y @ g:i A') }}
+                                {{ $order->event->name ?? 'N/A' }}<br>
+                                {{ $order->event->venue->name ?? 'Main Arena' }}<br>
+                                {{ $order->event->event_date ? \Carbon\Carbon::parse($order->event->event_date)->format('M d, Y @ g:i A') : 'N/A' }}
                             </td>
                         </tr>
                     </table>
@@ -89,7 +87,7 @@
             </tr>
             @foreach($order->tickets as $ticket)
             <tr class="item {{ $loop->last ? 'last' : '' }}">
-                <td>{{ $ticket->pricingTier->name }} Tier - Row {{ $ticket->row }}, Seat {{ $ticket->seat_number }}</td>
+                <td>{{ $ticket->pricingTier->name ?? 'Standard' }} Tier - Row {{ $ticket->row ?? 'GA' }}, Seat {{ $ticket->seat_number ?? 'GA' }}</td>
                 <td>${{ number_format($ticket->price, 2) }}</td>
             </tr>
             @endforeach

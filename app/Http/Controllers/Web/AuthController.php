@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OtpMail;
 
 class AuthController extends Controller
 {
@@ -30,11 +32,10 @@ class AuthController extends Controller
         $remember = $request->has('remember');
         
         if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
             $request->session()->regenerate();
             
-            // Check user status (redundant with middleware but kept for immediate feedback)
-            $user = Auth::user();
-            
+            // Check if user is banned or inactive
             if ($user->isBanned() || !$user->is_active) {
                 Auth::logout();
                 $request->session()->invalidate();
@@ -43,6 +44,25 @@ class AuthController extends Controller
                 return redirect()->back()
                     ->withErrors(['email' => 'Your account is not accessible. Please contact support.'])
                     ->withInput($request->except('password'));
+            }
+            
+            // Check if email is verified (skip for admin)
+            if (!$user->is_verified && !$user->hasRole(['super-admin', 'admin'])) {
+                // Generate OTP if needed
+                if (!$user->otp_code || $user->isOtpExpired()) {
+                    $otp = $user->generateOtp();
+                    
+                    try {
+                        Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send OTP: ' . $e->getMessage());
+                    }
+                }
+                
+                session(['email' => $user->email]);
+                
+                return redirect()->route('verify_otp')
+                    ->with('warning', 'Please verify your email to continue.');
             }
             
             // Redirect based on role
@@ -78,15 +98,104 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'phone' => $request->phone,
-            'is_active' => true
+            'is_active' => true,
+            'is_verified' => false
         ]);
         
         $user->assignRole('customer');
         
+        // Generate and send OTP
+        $otp = $user->generateOtp();
+        
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP: ' . $e->getMessage());
+        }
+        
         Auth::login($user);
+        session(['email' => $user->email]);
+        
+        return redirect()->route('verify_otp')
+            ->with('success', 'Account created! Please verify your email.');
+    }
+    
+    public function showOtpForm()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+        
+        if (Auth::user()->is_verified) {
+            return redirect()->route('home');
+        }
+        
+        return view('auth.verify-otp');
+    }
+    
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string|size:6'
+        ]);
+        
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Session expired. Please login again.']);
+        }
+        
+        if ($user->isOtpExpired()) {
+            return redirect()->back()
+                ->withErrors(['otp' => 'OTP has expired. Request a new one.']);
+        }
+        
+        if ($user->otp_code !== $request->otp) {
+            return redirect()->back()
+                ->withErrors(['otp' => 'Invalid OTP code. Try again.']);
+        }
+        
+        // Mark as verified
+        $user->is_verified = true;
+        $user->email_verified_at = now();
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->save();
+        
+        session()->forget('email');
+        
+        if ($user->hasRole(['super-admin', 'admin'])) {
+            return redirect()->route('admin_dashboard')
+                ->with('success', 'Email verified!');
+        }
         
         return redirect()->route('home')
-            ->with('success', 'Welcome to VenueTickets! Your account has been created successfully.');
+            ->with('success', 'Email verified! Welcome to VenueTickets!');
+    }
+    
+    public function resendOtp()
+    {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        
+        if ($user->is_verified) {
+            return redirect()->route('home');
+        }
+        
+        $otp = $user->generateOtp();
+        
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP: ' . $e->getMessage());
+        }
+        
+        return redirect()->back()
+            ->with('success', 'New OTP sent to your email.');
     }
     
     public function logout(Request $request)
@@ -97,7 +206,10 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         
         return redirect()->route('login')
-            ->with('success', 'You have been logged out successfully.');
+            ->with('success', 'Logged out successfully.')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
     
     public function profile()
@@ -122,7 +234,7 @@ class AuthController extends Controller
         $user->phone = $request->phone;
         $user->save();
         
-        return redirect()->back()->with('success', 'Profile updated successfully.');
+        return redirect()->back()->with('success', 'Profile updated.');
     }
     
     public function showChangePasswordForm()
@@ -141,7 +253,7 @@ class AuthController extends Controller
         
         if (!Hash::check($request->current_password, $user->password)) {
             return redirect()->back()
-                ->withErrors(['current_password' => 'The current password is incorrect.']);
+                ->withErrors(['current_password' => 'Current password is incorrect.']);
         }
         
         $user->password = bcrypt($request->password);
@@ -162,8 +274,19 @@ class AuthController extends Controller
             'email' => 'required|email|exists:users,email'
         ]);
         
-        return redirect()->back()
-            ->with('success', 'Password reset link has been sent to your email.');
+        $user = User::where('email', $request->email)->first();
+        $otp = $user->generateOtp();
+        
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP: ' . $e->getMessage());
+        }
+        
+        session(['reset_email' => $user->email]);
+        
+        return redirect()->route('password.reset', ['token' => 'otp'])
+            ->with('success', 'OTP sent to your email for password reset.');
     }
     
     public function showResetPasswordForm($token)
@@ -177,7 +300,22 @@ class AuthController extends Controller
             'token' => 'required',
             'email' => 'required|email|exists:users,email',
             'password' => 'required|string|min:8|confirmed',
+            'otp' => 'required|string|size:6'
         ]);
+        
+        $user = User::where('email', $request->email)->first();
+        
+        if ($user->isOtpExpired() || $user->otp_code !== $request->otp) {
+            return redirect()->back()
+                ->withErrors(['otp' => 'Invalid or expired OTP.']);
+        }
+        
+        $user->password = bcrypt($request->password);
+        $user->otp_code = null;
+        $user->otp_expires_at = null;
+        $user->save();
+        
+        session()->forget('reset_email');
         
         return redirect()->route('login')
             ->with('success', 'Password reset successfully. Please login.');
@@ -208,7 +346,8 @@ class AuthController extends Controller
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'phone' => $request->phone,
-            'is_active' => true
+            'is_active' => true,
+            'is_verified' => false
         ]);
         
         $user->organizerDetail()->create([
@@ -223,9 +362,19 @@ class AuthController extends Controller
         $user->assignRole('customer');
         $user->assignRole('organizer');
         
-        Auth::login($user);
+        // Generate and send OTP
+        $otp = $user->generateOtp();
         
-        return redirect()->route('home')
-            ->with('success', 'Your organizer application has been submitted for review.');
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user->name));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send OTP: ' . $e->getMessage());
+        }
+        
+        Auth::login($user);
+        session(['email' => $user->email]);
+        
+        return redirect()->route('verify_otp')
+            ->with('success', 'Account created! Please verify your email to continue.');
     }
 }

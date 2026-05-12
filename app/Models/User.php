@@ -17,18 +17,27 @@ class User extends Authenticatable
         'password',
         'phone',
         'avatar',
+        'provider',
+        'provider_id',
         'is_active',
+        'is_verified',
+        'otp_code',
+        'otp_expires_at',
         'email_verified_at'
     ];
     
     protected $hidden = [
         'password',
         'remember_token',
+        'otp_code',
     ];
     
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'is_active' => 'boolean'
+        'otp_expires_at' => 'datetime',
+        'is_active' => 'boolean',
+        'is_verified' => 'boolean',
+        'password' => 'hashed', // Add this line
     ];
     
     public function organizerDetail()
@@ -74,5 +83,19 @@ class User extends Authenticatable
     public function isAdmin()
     {
         return $this->hasRole('super-admin') || $this->hasRole('admin');
+    }
+    
+    public function isOtpExpired()
+    {
+        return $this->otp_expires_at && $this->otp_expires_at->isPast();
+    }
+    
+    public function generateOtp()
+    {
+        $this->otp_code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->otp_expires_at = now()->addMinutes(10);
+        $this->save();
+        
+        return $this->otp_code;
     }
 }

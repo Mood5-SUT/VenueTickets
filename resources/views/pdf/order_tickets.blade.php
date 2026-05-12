@@ -8,7 +8,6 @@
         .ticket-container { width: 100%; border: 2px solid #eee; border-radius: 10px; overflow: hidden; margin: 20px auto; max-width: 600px; page-break-after: always; }
         .ticket-container:last-child { page-break-after: avoid; }
         
-        /* Thematic Colors */
         @php
             $type = strtolower($order->event->event_type ?? 'concert');
             $primaryColor = '#333';
@@ -30,9 +29,6 @@
 </head>
 <body>
     @foreach($order->tickets as $ticket)
-        @php
-            $qrData = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(120)->generate($ticket->qr_code);
-        @endphp
         <div class="ticket-container">
             <div class="header">
                 <h1 style="margin:0;">VENUE TICKETS</h1>
@@ -42,21 +38,21 @@
                 <div class="row">
                     <div class="col">
                         <div class="label">Event</div>
-                        <div class="value">{{ $ticket->event->name }}</div>
+                        <div class="value">{{ $order->event->name ?? 'N/A' }}</div>
                     </div>
                     <div class="col" style="text-align: right;">
                         <div class="label">Date</div>
-                        <div class="value">{{ \Carbon\Carbon::parse($ticket->event->event_date)->format('M d, Y') }}</div>
+                        <div class="value">{{ $order->event->event_date ? \Carbon\Carbon::parse($order->event->event_date)->format('M d, Y') : 'N/A' }}</div>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
                         <div class="label">Venue</div>
-                        <div class="value">{{ $ticket->event->venue ? $ticket->event->venue->name : 'Venue' }}</div>
+                        <div class="value">{{ $order->event->venue->name ?? 'Venue' }}</div>
                     </div>
                     <div class="col" style="text-align: right;">
                         <div class="label">Seat</div>
-                        <div class="value">Row {{ $ticket->row }}, Seat {{ $ticket->seat_number }}</div>
+                        <div class="value">Row {{ $ticket->row ?? 'GA' }}, Seat {{ $ticket->seat_number ?? 'GA' }}</div>
                     </div>
                 </div>
                 <div class="row">
@@ -72,10 +68,10 @@
             </div>
             <div class="qr-section">
                 <div class="label" style="margin-bottom: 15px;">Unique Entry QR Code</div>
-                <img src="data:image/svg+xml;base64, {!! base64_encode($qrData) !!} " width="120" height="120">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ urlencode($ticket->qr_code) }}" width="120" height="120">
             </div>
             <div class="footer">
-                Presented by {{ $ticket->event->organizer->organizerDetail->company_name ?? 'The Event Organizer' }}
+                Presented by {{ $order->event->organizer->organizerDetail->company_name ?? 'The Event Organizer' }}
                 <br>This ticket is unique and should not be shared. Signed and encrypted for security.
             </div>
         </div>

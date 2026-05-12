@@ -17,15 +17,16 @@ class SocialiteController extends Controller
     }
 
     public function handleGoogleCallback()
-    {
-        try {
-            $socialUser = Socialite::driver('google')->user();
-            return $this->handleSocialUser($socialUser, 'google');
-        } catch (\Exception $e) {
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Google login failed. Please try again.']);
-        }
+{
+    try {
+        $socialUser = Socialite::driver('google')->user();
+        return $this->handleSocialUser($socialUser, 'google');
+    } catch (\Exception $e) {
+        \Log::error('Google login error: ' . $e->getMessage());
+        return redirect()->route('login')
+            ->withErrors(['email' => 'Google login failed: ' . $e->getMessage()]);
     }
+}
 
     // Common handler for social logins
     private function handleSocialUser($socialUser, $provider)
@@ -38,14 +39,19 @@ class SocialiteController extends Controller
             $user = User::where('email', $socialUser->getEmail())->first();
 
             if ($user) {
+                // Link social account to existing user
                 $user->provider = $provider;
                 $user->provider_id = $socialUser->getId();
-                $user->avatar = $socialUser->getAvatar();
+                if (!$user->avatar) {
+                    $user->avatar = $socialUser->getAvatar();
+                }
                 $user->save();
             } else {
+                // Create new user with a random password
                 $user = User::create([
                     'name' => $socialUser->getName() ?? 'User',
                     'email' => $socialUser->getEmail(),
+                    'password' => bcrypt(uniqid() . time()), // Random secure password
                     'provider' => $provider,
                     'provider_id' => $socialUser->getId(),
                     'avatar' => $socialUser->getAvatar(),

@@ -21,7 +21,8 @@ class OtpMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Your OTP Code - VenueTickets')
+        return $this->from(config('mail.from.address'), config('mail.from.name'))
+                    ->subject('Your OTP Code - VenueTickets')
                     ->view('emails.otp');
     }
 }

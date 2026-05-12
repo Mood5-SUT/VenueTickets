@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\AuthController;
+use App\Http\Controllers\Web\HomeController;
 use App\Http\Controllers\Web\AdminController;
 use App\Http\Controllers\Web\EventsController;
 use App\Http\Controllers\Web\VenuesController;
@@ -18,8 +19,8 @@ use App\Http\Controllers\Web\FinanceController;
 use App\Http\Controllers\Web\AnalyticsController;
 use App\Http\Controllers\Web\SettingsController;
 use App\Http\Controllers\Web\AuditController;
-
 use App\Http\Controllers\Web\PublicEventController;
+use App\Http\Controllers\Web\SocialiteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,9 +30,8 @@ use App\Http\Controllers\Web\PublicEventController;
 
 // Home Route
 Route::get('/', function () {
-    // Fetch upcoming events
-    $events = \App\Models\Event::where('status', 'published') // Assuming 'published' is the active status
-        ->orWhere('status', 'draft') // Including draft for testing if published are empty
+    $events = \App\Models\Event::where('status', 'published')
+        ->orWhere('status', 'draft')
         ->orderBy('event_date', 'asc')
         ->take(6)
         ->get();
@@ -39,7 +39,7 @@ Route::get('/', function () {
     return view('welcome', compact('events'));
 })->name('home');
 
-// Public Event Details Route
+// Public Event Routes
 Route::get('/events', [PublicEventController::class, 'index'])->name('events.index');
 Route::get('/event/{id}', [PublicEventController::class, 'show'])->name('event.show');
 Route::post('/event/{id}/checkout', [PublicEventController::class, 'checkout'])->name('event.checkout');
@@ -67,7 +67,6 @@ Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('login', [AuthController::class, 'login'])->name('login_submit');
 Route::get('register', [AuthController::class, 'showRegistrationForm'])->name('register');
 Route::post('register', [AuthController::class, 'register'])->name('register_submit');
-Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // Password Reset Routes
 Route::get('forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
@@ -79,8 +78,21 @@ Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('p
 Route::get('organizer/register', [AuthController::class, 'showOrganizerRegistration'])->name('organizer.register');
 Route::post('organizer/register', [AuthController::class, 'registerOrganizer'])->name('organizer.register_submit');
 
+// Social Login Routes
+Route::prefix('auth')->name('social.')->group(function () {
+    Route::get('google/redirect', [SocialiteController::class, 'redirectToGoogle'])->name('google');
+    Route::get('google/callback', [SocialiteController::class, 'handleGoogleCallback'])->name('google.callback');
+});
+
 // Protected Routes
-Route::middleware('auth:web')->group(function () {
+Route::middleware('auth')->group(function () {
+    
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
+    
+    // OTP Verification
+    Route::get('verify-otp', [AuthController::class, 'showOtpForm'])->name('verify_otp');
+    Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->name('verify_otp_submit');
+    Route::post('resend-otp', [AuthController::class, 'resendOtp'])->name('resend_otp');
     
     // Profile Routes
     Route::get('profile', [AuthController::class, 'profile'])->name('profile');
@@ -185,7 +197,7 @@ Route::middleware('auth:web')->group(function () {
             Route::get('activity-log', [RolesController::class, 'activityLog'])->name('activity_log');
         });
         
-        // Orders & Tickets
+        // Orders
         Route::prefix('orders')->name('orders_')->group(function () {
             Route::get('/', [OrdersController::class, 'list'])->name('list');
             Route::get('{id}', [OrdersController::class, 'view'])->name('view');
