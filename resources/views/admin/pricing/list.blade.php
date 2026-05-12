@@ -98,13 +98,82 @@
                             </span>
                         </td>
                         <td>
-                            <form action="{{ route('admin_events_pricing_delete', [$event->id, $tier->id]) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this pricing tier?')">
-                                    <i class="bi bi-trash"></i>
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editTierModal{{ $tier->id }}" title="Edit Tier">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                            </form>
+                                
+                                <form action="{{ route('admin_events_pricing_toggle', [$event->id, $tier->id]) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-{{ $tier->is_active ? 'warning' : 'success' }}" title="{{ $tier->is_active ? 'Pause Sales' : 'Resume Sales' }}">
+                                        <i class="bi bi-{{ $tier->is_active ? 'pause-fill' : 'play-fill' }}"></i>
+                                    </button>
+                                </form>
+
+                                <form action="{{ route('admin_events_pricing_delete', [$event->id, $tier->id]) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this pricing tier?')" title="Delete Tier">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editTierModal{{ $tier->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ route('admin_events_pricing_edit', [$event->id, $tier->id]) }}">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Edit Pricing Tier: {{ $tier->name }}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-dark">Tier Name</label>
+                                                        <input type="text" name="name" class="form-control" value="{{ $tier->name }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-dark">Price ($)</label>
+                                                        <input type="number" step="0.01" name="price" class="form-control" value="{{ $tier->price }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label text-dark">Total Capacity (Increase this to add more tickets)</label>
+                                                        <input type="number" name="quantity" class="form-control" value="{{ $tier->quantity }}" placeholder="Leave empty for unlimited">
+                                                        <small class="text-muted">Current sales: {{ $tier->sold_count }}</small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label text-dark">Min/Order</label>
+                                                        <input type="number" name="min_per_order" class="form-control" value="{{ $tier->min_per_order }}" required>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label text-dark">Max/Order</label>
+                                                        <input type="number" name="max_per_order" class="form-control" value="{{ $tier->max_per_order }}">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-dark">Start Sales At</label>
+                                                        <input type="datetime-local" name="starts_at" class="form-control" value="{{ \Carbon\Carbon::parse($tier->starts_at)->format('Y-m-d\TH:i') }}" required>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label text-dark">End Sales At</label>
+                                                        <input type="datetime-local" name="ends_at" class="form-control" value="{{ \Carbon\Carbon::parse($tier->ends_at)->format('Y-m-d\TH:i') }}" required>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label class="form-label text-dark">Description</label>
+                                                        <textarea name="description" class="form-control" rows="2">{{ $tier->description }}</textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     @empty

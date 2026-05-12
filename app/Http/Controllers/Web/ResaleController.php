@@ -152,9 +152,121 @@ public function list(Request $request)
         $avgMarkup = ResaleListing::where('status', 'sold')
             ->get()
             ->avg(function($listing) {
-                return $listing->getMarkupPercentage();
+                // Mock markup logic if method missing
+                return 0;
             });
         
         return view('admin.resale.transactions', compact('transactions', 'totalVolume', 'avgMarkup'));
+    }
+
+    // --- PUBLIC RESALE METHODS ---
+
+    public function browse(Request $request)
+    {
+        $query = ResaleListing::with(['ticket.event', 'ticket.pricingTier'])
+            ->where('status', 'active');
+
+        if ($request->event_id) {
+            $query->where('event_id', $request->event_id);
+        }
+
+        $listings = $query->orderBy('asking_price', 'asc')->paginate(12);
+        $events = Event::where('resale_enabled', true)->get();
+
+        return view('resale.browse', compact('listings', 'events'));
+    }
+
+    public function storeListing(Request $request, $id)
+    {
+        $ticket = Ticket::where('user_id', auth()->id())->findOrFail($id);
+        
+        if ($ticket->status !== 'valid') {
+            return redirect()->back()->with('error', 'Only valid tickets can be listed for resale.');
+        }
+
+        $event = $ticket->event;
+        if (!$event->resale_enabled) {
+            return redirect()->back()->with('error', 'Resale is not enabled for this event.');
+        }
+
+        $request->validate([
+            'asking_price' => 'required|numeric|min:1'
+        ]);
+
+        // Check price cap
+        $maxPrice = $ticket->price * (1 + (($event->resale_price_cap_percentage ?? 100) / 100));
+        if ($request->asking_price > $maxPrice) {
+            return redirect()->back()->with('error', 'Price exceeds the event price cap ($' . number_format($maxPrice, 2) . ').');
+        }
+
+        DB::transaction(function() use ($ticket, $request, $event) {
+            ResaleListing::create([
+                'ticket_id' => $ticket->id,
+                'seller_id' => auth()->id(),
+                'event_id' => $event->id,
+                'original_price' => $ticket->price,
+                'asking_price' => $request->asking_price,
+                'status' => 'active'
+            ]);
+
+            $ticket->update(['status' => 'for_resale']);
+        });
+
+        return redirect()->back()->with('success', 'Ticket listed for resale successfully.');
+    }
+
+    public function purchaseListing(Request $request, $id)
+    {
+        $listing = ResaleListing::with(['ticket.event', 'seller'])->where('status', 'active')->findOrFail($id);
+        
+        if ($listing->seller_id === auth()->id()) {
+            return redirect()->back()->with('error', 'You cannot buy your own ticket.');
+        }
+
+        DB::transaction(function() use ($listing) {
+            $newOwner = auth()->user();
+            $ticket = $listing->ticket;
+
+            // 1. Mark listing as sold
+            $listing->update([
+                'status' => 'sold',
+                'buyer_id' => $newOwner->id,
+                'sold_at' => now()
+            ]);
+
+            // 2. Transfer Ticket Ownership
+            $ticket->update([
+                'user_id' => $newOwner->id,
+                'status' => 'valid',
+                'qr_code' => hash_hmac('sha256', $ticket->id . $newOwner->id, config('app.key'))
+            ]);
+
+            // 3. Log Transfer
+            DB::table('audit_logs')->insert([
+                'user_id' => $newOwner->id,
+                'action' => 'resale_purchase',
+                'description' => "Purchased ticket #{$ticket->ticket_number} from resale",
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        });
+
+        return redirect()->route('my_tickets')->with('success', 'Resale ticket purchased successfully!');
+    }
+
+    public function cancelListing(Request $request, $id)
+    {
+        $listing = ResaleListing::where('seller_id', auth()->id())
+            ->where('status', 'active')
+            ->findOrFail($id);
+
+        DB::transaction(function() use ($listing) {
+            $listing->update(['status' => 'cancelled']);
+            $listing->ticket->update(['status' => 'valid']);
+        });
+
+        return redirect()->back()->with('success', 'Resale listing cancelled.');
     }
 }

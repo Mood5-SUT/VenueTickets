@@ -89,6 +89,43 @@
                         </div>
                         <small class="text-white-50 fw-bold" style="font-size: 0.55rem; letter-spacing: 1px;">#{{ $ticket->ticket_number }}</small>
                         <span class="badge {{ $ticket->status === 'valid' ? 'bg-success' : 'bg-danger' }} rounded-pill mt-2 py-1 px-3" style="font-size: 0.6rem;">{{ strtoupper($ticket->status) }}</span>
+                        
+                        @if($ticket->status === 'valid')
+                            <div class="d-flex flex-column gap-1 mt-2">
+                                <a href="{{ route('ticket.download', $ticket->id) }}" class="btn btn-link btn-sm text-white-50 p-0" style="text-decoration: none;">
+                                    <i class="bi bi-download me-1"></i> PDF
+                                </a>
+                                <button type="button" class="btn btn-link btn-sm text-white-50 p-0" data-bs-toggle="modal" data-bs-target="#transferModal{{ $ticket->id }}">
+                                    <i class="bi bi-send me-1"></i> Transfer
+                                </button>
+                            </div>
+
+                            <!-- Transfer Modal -->
+                            <div class="modal fade" id="transferModal{{ $ticket->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content glass-card border-white-10">
+                                        <div class="modal-header border-white-10">
+                                            <h5 class="modal-title">Transfer Ticket</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="{{ route('ticket.transfer', $ticket->id) }}" method="POST">
+                                            @csrf
+                                            <div class="modal-body text-start">
+                                                <p class="small text-secondary mb-3">Transfer this ticket to another user by entering their email address. They must have an account on this platform.</p>
+                                                <div class="mb-3">
+                                                    <label class="form-label small fw-bold">Recipient Email</label>
+                                                    <input type="email" name="email" class="form-control bg-white-5 border-white-10 text-white" placeholder="friend@example.com" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer border-white-10">
+                                                <button type="button" class="btn btn-modern btn-outline-glass" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-modern btn-gradient">Confirm Transfer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
