@@ -13,7 +13,7 @@
             Secure your spot at the most anticipated concerts, thrilling matches, and exclusive theater performances.
         </p>
         
-        <form action="{{ route('admin_search') }}" method="GET" class="mx-auto" style="max-width: 650px;">
+        <form action="{{ route('events.index') }}" method="GET" class="mx-auto" style="max-width: 650px;">
             <div class="glass-card p-2 d-flex align-items-center" style="border-radius: 50px;">
                 <i class="bi bi-search ms-3 text-muted" style="font-size: 1.2rem;"></i>
                 <input type="text" name="q" class="form-control border-0 bg-transparent shadow-none ps-3" placeholder="Search for artists, teams, or venues..." style="height: 50px; font-size: 1.1rem; color: var(--text-primary);">
@@ -54,6 +54,15 @@
                     } elseif (str_contains($type, 'conference') || str_contains($type, 'tech')) {
                         $themeClass = 'theme-conference';
                         $iconClass = 'bi-mic';
+                    } elseif (str_contains($type, 'cinema') || str_contains($type, 'movie')) {
+                        $themeClass = 'theme-cinema';
+                        $iconClass = 'bi-film';
+                    } elseif (str_contains($type, 'exhibition') || str_contains($type, 'museum') || str_contains($type, 'art')) {
+                        $themeClass = 'theme-exhibition';
+                        $iconClass = 'bi-palette';
+                    } elseif (str_contains($type, 'party') || str_contains($type, 'nightlife') || str_contains($type, 'club')) {
+                        $themeClass = 'theme-nightlife';
+                        $iconClass = 'bi-stars';
                     }
                 @endphp
                 
@@ -90,6 +99,9 @@
                                     <span style="font-size: 0.85rem;"><i class="bi bi-calendar3 me-1 text-primary"></i> {{ \Carbon\Carbon::parse($event->event_date)->format('M d') }}</span>
                                     <span style="font-size: 0.85rem;"><i class="bi bi-geo-alt me-1 text-secondary"></i> {{ $event->venue ? $event->venue->name : 'Main Arena' }}</span>
                                 </div>
+                                @if($event->description)
+                                    <p class="mt-3 text-white-50 small opacity-75 mb-0" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">{{ $event->description }}</p>
+                                @endif
                             </div>
                         </div>
 

@@ -70,10 +70,27 @@
                 
                 <div class="col-md-4">
                     <label class="form-label">Scope</label>
-                    <select name="scope" class="form-select">
+                    <select name="scope" id="scopeSelector" class="form-select">
                         <option value="global" {{ ($promoCode->scope ?? 'global') == 'global' ? 'selected' : '' }}>Global</option>
                         <option value="event_specific" {{ ($promoCode->scope ?? '') == 'event_specific' ? 'selected' : '' }}>Event Specific</option>
                     </select>
+                </div>
+                
+                <div class="col-12" id="eventSelectorContainer" style="display: {{ ($promoCode->scope ?? '') == 'event_specific' ? 'block' : 'none' }}">
+                    <label class="form-label">Applicable Events</label>
+                    <div class="row g-2">
+                        @foreach($events as $event)
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="applicable_events[]" value="{{ $event->id }}" 
+                                           id="event{{ $event->id }}" {{ in_array($event->id, $promoCode->applicable_events ?? []) ? 'checked' : '' }}>
+                                    <label class="form-check-label small" for="event{{ $event->id }}">
+                                        {{ $event->name }} ({{ \Carbon\Carbon::parse($event->event_date)->format('M d') }})
+                                    </label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
                 
                 <div class="col-12">

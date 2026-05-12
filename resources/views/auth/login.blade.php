@@ -28,20 +28,6 @@
                         </div>
                     @endif
                     
-                    <!-- Social Login Button -->
-                    <div class="mb-4">
-                        <div class="d-grid">
-                            <a href="{{ route('social.google') }}" class="btn btn-outline-danger">
-                                <i class="bi bi-google me-2"></i> Continue with Google
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center mb-4">
-                        <span class="text-muted">or sign in with email</span>
-                        <hr>
-                    </div>
-                    
                     <form method="POST" action="{{ route('login_submit') }}">
                         {{ csrf_field() }}
                         

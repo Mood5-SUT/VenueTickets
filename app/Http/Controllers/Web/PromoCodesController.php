@@ -64,7 +64,13 @@ public function list(Request $request)
         ]);
         
         $promoCode = $id ? PromoCode::findOrFail($id) : new PromoCode();
-        $promoCode->fill($request->all());
+        $data = $request->all();
+        if ($request->scope === 'global') {
+            $data['applicable_events'] = null;
+        } else {
+            $data['applicable_events'] = $request->input('applicable_events', []);
+        }
+        $promoCode->fill($data);
         $promoCode->save();
         
         return redirect()->route('admin_promo_codes_edit', $promoCode->id)
